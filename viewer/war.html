@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AIM ACADEMY</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+  body { font-family: ui-monospace, Menlo, monospace; color: #dfe6ee; }
+  .screen {
+    position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 20px;
+    background: radial-gradient(ellipse 80% 60% at 50% 30%, #1a0f0f 0%, #050405 75%);
+  }
+  .screen.hidden { display: none; }
+  h1 { font-size: clamp(1.8rem, 5vw, 3rem); color: #ff5544; letter-spacing: .1em; margin: 0 0 4px; }
+  .sub { color: #8a94a0; margin-bottom: 26px; font-size: .95rem; }
+  .stats {
+    background: rgba(255,255,255,.04); border: 1px solid #332; border-radius: 10px;
+    padding: 14px 20px; margin-bottom: 18px; width: min(460px, 90vw); text-align: left; font-size: .85rem;
+  }
+  .stats b { color: #ffb347; }
+  .gbar { height: 7px; background: #221a1a; border-radius: 4px; margin: 3px 0 9px; overflow: hidden; }
+  .gbar i { display: block; height: 100%; background: linear-gradient(90deg, #ff5544, #ffb347); border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+  td, th { padding: 3px 6px; text-align: left; color: #9aa4b0; }
+  th { color: #667; border-bottom: 1px solid #333; }
+  button.big {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 700;
+    letter-spacing: .1em; cursor: pointer;
+    color: #fff; background: linear-gradient(90deg, #c62828, #ff5544);
+    border: none; border-radius: 12px; padding: 16px 44px; margin: 4px;
+    box-shadow: 0 10px 34px rgba(255, 70, 50, .35);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  button.big:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(255, 70, 50, .5); }
+  button.ghost {
+    font: inherit; font-size: .8rem; cursor: pointer; color: #8a94a0;
+    background: none; border: 1px solid #333; border-radius: 8px; padding: 8px 14px; margin: 4px;
+  }
+  /* full-bleed hero: the landing page IS the hero, robot fills the right half */
+  #menu { display: block; overflow-y: auto; background: #070609; padding: 0; }
+  #menu.hidden { display: none; }
+  .hero { position: relative; height: 100vh; min-height: 620px; overflow: hidden; }
+  #robotSlot { position: absolute; top: 0; right: 0; width: 58%; height: 100%; z-index: 1; }
+  #robotSlot spline-viewer { width: 100%; height: 100%; }
+  .heroFade {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background: linear-gradient(90deg, #070609 32%, rgba(7,6,9,.4) 55%, transparent 75%),
+                linear-gradient(0deg, #070609 0%, transparent 16%);
+  }
+  .heroContent {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    left: 6vw; max-width: 640px; z-index: 3; text-align: left;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .kicker {
+    display: flex; align-items: center; gap: 10px; color: #ff5544;
+    font-size: .76rem; letter-spacing: .3em; margin-bottom: 20px; font-weight: 600;
+  }
+  .kicker i {
+    width: 8px; height: 8px; border-radius: 50%; background: #ff5544;
+    box-shadow: 0 0 12px #ff5544; animation: pulse 1.6s infinite;
+  }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .heroTitle {
+    font-size: clamp(3rem, 7vw, 5.6rem); font-weight: 800; line-height: .97;
+    letter-spacing: -.02em; margin: 0 0 22px;
+    background: linear-gradient(to bottom, #ffffff 30%, #6c6c78);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .heroTag { color: #a7afbb; max-width: 480px; font-size: 1.05rem; line-height: 1.65; margin: 0 0 32px; }
+  .ctaRow { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .loadState { margin-top: 18px; color: #6d7684; font-size: .78rem; font-family: ui-monospace, Menlo, monospace; }
+  .robotCap {
+    position: absolute; right: 26px; bottom: 20px; z-index: 3;
+    font-size: .66rem; color: #8a94a0; letter-spacing: .18em;
+    background: rgba(0,0,0,.55); padding: 5px 12px; border-radius: 6px;
+  }
+  .spot {
+    position: absolute; top: -45%; left: -12%; width: 90%; height: 190%; z-index: 2;
+    background: radial-gradient(ellipse at center, rgba(255,255,255,.1) 0%, transparent 60%);
+    transform: rotate(-19deg); filter: blur(50px); opacity: 0;
+    animation: spotIn 2s .3s ease forwards; pointer-events: none;
+  }
+  @keyframes spotIn { to { opacity: 1; } }
+  .scrollHint {
+    position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+    color: #565a66; z-index: 3; animation: bob 1.8s infinite; font-size: .85rem;
+  }
+  @keyframes bob { 50% { transform: translate(-50%, 6px); } }
+  .panelSection {
+    max-width: 1100px; margin: 0 auto; padding: 56px 4vw 90px;
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; align-items: flex-start;
+  }
+  @media (max-width: 860px) {
+    #robotSlot { width: 100%; opacity: .3; }
+    .heroFade { background: linear-gradient(0deg, #070609 8%, rgba(7,6,9,.55) 100%); }
+  }
+  /* below-the-fold panels: same design language as the hero */
+  .panelSection { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; display: block; }
+  .secHead {
+    display: flex; align-items: center; gap: 10px; color: #ff5544;
+    font-size: .76rem; letter-spacing: .3em; font-weight: 600; margin: 0 0 18px 4px;
+  }
+  .secHead i {
+    width: 8px; height: 8px; border-radius: 50%; background: #ff5544;
+    box-shadow: 0 0 12px #ff5544;
+  }
+  .panel {
+    background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px; padding: 24px; color: #a7afbb; margin-bottom: 16px;
+  }
+  .panelTitle { font-size: .72rem; letter-spacing: .25em; color: #8a94a0; font-weight: 600; margin-bottom: 16px; }
+  .twoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .twoCol { grid-template-columns: 1fr; } }
+  .maps { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+  .mapCard {
+    cursor: pointer; border: 1.5px solid rgba(255,255,255,.08); border-radius: 12px;
+    overflow: hidden; background: #0b0b10; transition: border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .mapCard img { width: 100%; height: 118px; object-fit: cover; display: block; }
+  .mapCard .cap {
+    font-size: .78rem; color: #cfd5df; padding: 9px 12px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mapCard.sel { border-color: #ff5544; box-shadow: 0 0 26px rgba(255,70,50,.22); }
+  .mapCard:hover { border-color: rgba(255,179,71,.6); transform: translateY(-2px); }
+  .forgeRow { display: flex; gap: 10px; margin-top: 18px; }
+  #mapPrompt {
+    flex: 1; font-family: inherit; font-size: .9rem; color: #e8ecf2;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 10px; padding: 13px 16px; outline: none; transition: border-color .15s;
+  }
+  #mapPrompt:focus { border-color: #ff5544; }
+  #mapPrompt::placeholder { color: #5d6572; }
+  .forgeBtn {
+    font-family: inherit; font-size: .8rem; font-weight: 600; letter-spacing: .08em;
+    color: #ff8a75; background: transparent; border: 1px solid rgba(255,85,68,.5);
+    border-radius: 10px; padding: 12px 20px; cursor: pointer; white-space: nowrap;
+    transition: background .15s;
+  }
+  .forgeBtn:hover:not(:disabled) { background: rgba(255,85,68,.12); }
+  .forgeBtn:disabled { opacity: .45; cursor: wait; }
+  .mapStatus { font-size: .78rem; color: #8a94a0; margin-top: 10px; min-height: 1em; }
+  .deployPanel { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  #selThumb { width: 128px; height: 76px; object-fit: cover; border-radius: 10px; background: #0b0b10; border: 1px solid rgba(255,255,255,.1); }
+  .statRow { display: flex; justify-content: space-between; font-size: .82rem; color: #cfd5df; margin-top: 10px; }
+  .statRow span:last-child { color: #6d7684; }
+  .panel .gbar { height: 6px; background: rgba(255,255,255,.07); border-radius: 3px; margin: 5px 0 0; overflow: hidden; }
+  .panel table { font-family: inherit; font-size: .8rem; }
+  .panel th { color: #5d6572; font-weight: 600; letter-spacing: .05em; }
+  .panel td { color: #9aa4b0; padding: 5px 8px; }
+  /* HUD */
+  #hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: none; }
+  #cross { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    color: #fff; font-size: 18px; text-shadow: 0 0 4px #000; }
+  #hp { position: absolute; left: 16px; bottom: 16px; width: 220px; }
+  #hpbar { height: 10px; background: #300; border-radius: 5px; overflow: hidden; }
+  #hpbar i { display: block; height: 100%; background: linear-gradient(90deg,#c62828,#66bb6a); }
+  #ammo { position: absolute; right: 18px; bottom: 14px; font-size: 1.5rem; color: #fff; text-shadow: 0 0 6px #000; }
+  #round { position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    font-size: 1.1rem; color: #ff5544; text-shadow: 0 0 8px #000; }
+  #gen { position: absolute; top: 44px; left: 50%; transform: translateX(-50%);
+    font-size: .72rem; color: #8a94a0; }
+  #msg { position: absolute; top: 34%; left: 50%; transform: translateX(-50%);
+    font-size: 1.3rem; color: #ffb347; text-shadow: 0 0 8px #000; }
+  /* death cinematic: video → black/red fade → blur → panel over it */
+  #cine { position: fixed; inset: 0; z-index: 25; background: #000; }
+  #cine.hidden { display: none; }
+  #cineVid { width: 100%; height: 100%; object-fit: cover; transition: filter 1.4s ease; }
+  #cineFade {
+    position: absolute; inset: 0; opacity: 0; transition: opacity 2.2s ease; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 60%, rgba(130,0,0,.55) 0%, rgba(10,0,0,.9) 68%, #000 100%);
+  }
+  #gameover.overCine { background: transparent; }
+  #dmg { position: fixed; inset: 0; z-index: 9; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(200,0,0,.55) 100%);
+    transition: opacity .3s; }
+  #hit { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%) rotate(45deg);
+    color: #ff5544; font-size: 22px; opacity: 0; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div id="menu" class="screen">
+  <section class="hero">
+    <div id="robotSlot"></div>
+    <div class="heroFade"></div>
+    <div class="spot"></div>
+    <div class="heroContent">
+      <div class="kicker"><i></i> AIM ACADEMY — OPPONENT GENERATION <span id="genLabel">1</span></div>
+      <h1 class="heroTitle">TRAIN YOUR AIM<br/>AGAINST A RIVAL<br/>THAT LEARNS</h1>
+      <p class="heroTag">Battlegrounds generated by AI. An opponent that studies
+        every match you play and comes back sharper. How long can you stay ahead of it?</p>
+      <div class="ctaRow">
+        <button class="big" id="browseBtn">CHOOSE BATTLEFIELD ▾</button>
+        <button class="ghost" id="quickBtn" style="padding:15px 24px">▶ quick deploy</button>
+      </div>
+      <div id="loadState" class="loadState"></div>
+    </div>
+    <div class="robotCap">OPPONENT UNIT · LIVE</div>
+    <div class="scrollHint">▼</div>
+  </section>
+  <section class="panelSection" id="panels">
+    <div class="secHead"><i></i> STEP 1 · CHOOSE YOUR BATTLEFIELD</div>
+    <div class="panel">
+      <div id="maps" class="maps"></div>
+      <div class="forgeRow">
+        <input id="mapPrompt" placeholder="Imagine your own arena — we'll battle-ize it…" maxlength="200" />
+        <button id="mapCreate" class="forgeBtn">⚒ FORGE NEW MAP</button>
+      </div>
+      <div id="mapStatus" class="mapStatus"></div>
+      <div class="forgeRow" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)">
+        <input id="wltKey" type="password" placeholder="Your World Labs API key — pulls YOUR worlds, uses YOUR credits (this session only)" />
+        <button id="keyBtn" class="forgeBtn">🔑 CONNECT</button>
+      </div>
+      <div id="keyStatus" class="mapStatus"></div>
+    </div>
+    <div class="secHead"><i></i> STEP 2 · DEPLOY</div>
+    <div class="panel deployPanel">
+      <img id="selThumb" alt="" />
+      <div style="flex:1;min-width:200px">
+        <div class="panelTitle" style="margin:0 0 6px">SELECTED BATTLEFIELD</div>
+        <div id="selName" style="color:#e8ecf2;font-size:.95rem">loading…</div>
+      </div>
+      <button class="big" id="startBtn">▶ START TRAINING</button>
+    </div>
+    <div class="twoCol">
+      <div class="panel" id="aiStats"></div>
+      <div class="panel">
+        <div class="panelTitle">MATCH HISTORY</div>
+        <div id="histBox"></div>
+        <button class="ghost" id="resetBtn" style="width:100%;margin-top:14px">reset opponent memory</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="cine" class="hidden">
+  <video id="cineVid" src="assets/cinematicEnd.mp4" playsinline preload="auto"></video>
+  <div id="cineFade"></div>
+</div>
+
+<div id="gameover" class="screen hidden">
+  <h1 id="goTitle">K.I.A.</h1>
+  <div class="stats" id="goStats"></div>
+  <div>
+    <button class="big" id="againBtn">REDEPLOY</button>
+    <button class="ghost" id="menuBtn" style="padding:15px 24px">← main menu</button>
+  </div>
+  <div class="sub" style="margin-top:10px">the enemy keeps what it learned…</div>
+</div>
+
+<div id="hud">
+  <div id="cross">+</div>
+  <div id="round"></div>
+  <div id="gen"></div>
+  <div id="msg"></div>
+  <div id="hp"><div id="hpbar"><i style="width:100%"></i></div></div>
+  <div id="ammo"></div>
+  <div id="hit">✚</div>
+</div>
+<div id="dmg"></div>
+
+<script type="module" src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+    "@sparkjsdev/spark": "https://cdn.jsdelivr.net/npm/@sparkjsdev/spark@latest/dist/spark.module.js",
+    "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@latest/build/index.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { clone as cloneSkeleton } from "three/addons/utils/SkeletonUtils.js";
+import { SparkRenderer, SplatMesh } from "@sparkjsdev/spark";
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from "three-mesh-bvh";
+
+// BVH-accelerated raycasts: collider meshes are 100k+ triangles, and the bots
+// raycast constantly — without this the game is a slideshow.
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+const $ = (id) => document.getElementById(id);
+
+// ============================================================================
+// ENEMY BRAIN — population-based adaptation, persisted across matches.
+// Each bot mutates the shared genome slightly; after every round the genome
+// shifts toward the traits of the bots that hurt the player most. Slow steps,
+// so difficulty ramps across many matches, not within one.
+// ============================================================================
+const DEFAULT_GENOME = {
+  accuracy: 0.20,   // base hit probability per shot
+  reactionMs: 950,  // delay between seeing you and firing
+  speed: 1.5,       // m/s
+  strafe: 0.5,      // evasive side-movement amplitude
+  aggression: 0.35, // how close they push toward you
+};
+const LIMITS = { accuracy: [0.1, 0.85], reactionMs: [250, 1200], speed: [1.0, 3.0], strafe: [0.2, 1.6], aggression: [0.2, 0.9] };
+
+const store = {
+  get genome() { try { return { ...DEFAULT_GENOME, ...JSON.parse(localStorage.warai_genome) }; } catch { return { ...DEFAULT_GENOME }; } },
+  set genome(g) { localStorage.warai_genome = JSON.stringify(g); },
+  get generation() { return +localStorage.warai_gen || 1; },
+  set generation(n) { localStorage.warai_gen = n; },
+  get history() { try { return JSON.parse(localStorage.warai_hist) ?? []; } catch { return []; } },
+  set history(h) { localStorage.warai_hist = JSON.stringify(h.slice(0, 30)); },
+};
+
+function clampGenome(g) {
+  for (const k in LIMITS) g[k] = Math.min(LIMITS[k][1], Math.max(LIMITS[k][0], g[k]));
+  return g;
+}
+function mutate(g) {
+  const m = { ...g };
+  for (const k in LIMITS) m[k] *= 1 + (Math.random() - 0.5) * 0.16;
+  return clampGenome(m);
+}
+// After a round: blend genome toward the best-performing bot + slow global ramp
+function evolve(genome, roundBots, playerWon) {
+  const best = roundBots.slice().sort((a, b) => b.damageDealt - a.damageDealt)[0];
+  const g = { ...genome };
+  if (best && best.damageDealt > 0) {
+    for (const k in LIMITS) g[k] += (best.genome[k] - g[k]) * 0.25; // pull toward what worked
+  }
+  if (playerWon) {
+    // they died without killing you → slow, steady improvement
+    g.accuracy += 0.012;
+    g.reactionMs *= 0.975;
+    g.speed += 0.03;
+    g.strafe += 0.02;
+    g.aggression += 0.012;
+  }
+  return clampGenome(g);
+}
+
+// ============================================================================
+// Menu UI
+// ============================================================================
+function pct(v, [lo, hi]) { return Math.round(((v - lo) / (hi - lo)) * 100); }
+function renderMenu() {
+  const g = store.genome;
+  const inv = (v, lim) => 100 - pct(v, lim); // lower reaction = better
+  const stat = (label, v) =>
+    `<div class="statRow"><span>${label}</span><span>${v}%</span></div>` +
+    `<div class="gbar"><i style="width:${v}%"></i></div>`;
+  $("aiStats").innerHTML =
+    `<div class="panelTitle">OPPONENT AI · GENERATION ${store.generation}</div>` +
+    stat("aim", pct(g.accuracy, LIMITS.accuracy)) +
+    stat("reflexes", inv(g.reactionMs, LIMITS.reactionMs)) +
+    stat("mobility", pct(g.speed, LIMITS.speed)) +
+    stat("evasion", pct(g.strafe, LIMITS.strafe)) +
+    stat("aggression", pct(g.aggression, LIMITS.aggression));
+  const gl = $("genLabel");
+  if (gl) gl.textContent = store.generation;
+  const h = store.history;
+  $("histBox").innerHTML = h.length
+    ? `<table><tr><th>#</th><th>when</th><th>rounds</th><th>kills</th><th>enemy gen</th></tr>` +
+      h.slice(0, 8).map((r, i) =>
+        `<tr><td>${h.length - i}</td><td>${new Date(r.at).toLocaleTimeString()}</td><td>${r.rounds}</td><td>${r.kills}</td><td>${r.gen}</td></tr>`).join("") + `</table>`
+    : `<div style="color:#5d6572;padding:6px 0;font-size:.85rem">No matches yet — the opponent knows nothing about you… for now.</div>`;
+}
+$("resetBtn").onclick = () => {
+  delete localStorage.warai_genome; delete localStorage.warai_gen; delete localStorage.warai_hist;
+  renderMenu();
+};
+renderMenu();
+
+// --- 3D robot in the hero: the face of the adapting opponent ----------------
+// Mounted only while the menu is visible — Spline keeps its own render loop,
+// so we remove it during combat to give the game every frame.
+const ROBOT_SCENE = "https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode";
+function mountRobot() {
+  if (document.querySelector("#robotSlot spline-viewer")) return;
+  const v = document.createElement("spline-viewer");
+  v.setAttribute("url", ROBOT_SCENE);
+  $("robotSlot").appendChild(v);
+}
+function unmountRobot() {
+  document.querySelector("#robotSlot spline-viewer")?.remove();
+}
+mountRobot();
+
+// --- Map selection + user-forged maps --------------------------------------
+let selectedWorldId = new URLSearchParams(location.search).get("w");
+const isBattleMap = (w) => /battle|war|combat/i.test(w.prompt);
+
+function setDeployUI(world, loading) {
+  $("selName").textContent = loading ? "loading battlefield…" : (world?.prompt.split(",")[0] ?? "—");
+  if (world?.thumbnail_url) $("selThumb").src = world.thumbnail_url;
+  $("startBtn").disabled = !!loading;
+  $("startBtn").style.opacity = loading ? 0.4 : 1;
+}
+
+async function loadMaps() {
+  const worlds = await fetchWorlds();
+  const local = worlds.filter(isBattleMap);
+  const localIds = new Set(local.map((w) => w.world_id));
+  const acct = accountWorlds.filter((w) => !localIds.has(w.world_id));
+  const maps = [...local, ...acct];
+  if (!maps.length) { $("maps").innerHTML = "<div style='color:#5d6572'>no maps yet — forge one below</div>"; return; }
+  if (!maps.find((m) => m.world_id === selectedWorldId)) selectedWorldId = maps[0].world_id;
+  $("maps").innerHTML = maps.map((w) =>
+    `<div class="mapCard ${w.world_id === selectedWorldId ? "sel" : ""}" data-id="${w.world_id}">
+       <img src="${w.thumbnail_url ?? ""}" alt="" />
+       <div class="cap">${w.account ? "◈ " : ""}${w.prompt.split(",")[0].slice(0, 46)}</div>
+     </div>`).join("");
+  for (const el of document.querySelectorAll(".mapCard")) {
+    el.onclick = async () => {
+      if (el.dataset.id === selectedWorldId) return;
+      selectedWorldId = el.dataset.id;
+      history.replaceState(null, "", `?w=${selectedWorldId}`);
+      loadMaps(); // re-render selection highlight
+      setDeployUI(null, true);
+      try {
+        currentWorld = await loadWorldById(selectedWorldId);
+        setDeployUI(currentWorld, false);
+      } catch (e) { $("selName").textContent = `✗ ${e.message}`; }
+    };
+  }
+}
+loadMaps();
+
+$("quickBtn").onclick = () => $("startBtn").click();
+
+// BYO API key — held in sessionStorage only (gone when the tab closes),
+// never written to disk on the server; used to list the user's own worlds
+// and to forge new ones on their credits.
+$("keyBtn").onclick = async () => {
+  const k = $("wltKey").value.trim();
+  if (!k || k.startsWith("•")) return;
+  sessionStorage.setItem("wlt_key", k);
+  $("keyStatus").textContent = "connecting to your account…";
+  try {
+    await fetchAccountWorlds();
+    $("keyStatus").textContent = `✓ connected — ${accountWorlds.length} world${accountWorlds.length === 1 ? "" : "s"} from your account (◈, this session only)`;
+    $("wltKey").value = "••••••••";
+    loadMaps();
+  } catch (e) {
+    sessionStorage.removeItem("wlt_key");
+    $("keyStatus").textContent = `✗ ${e.message}`;
+  }
+};
+
+$("browseBtn").onclick = () => $("panels").scrollIntoView({ behavior: "smooth" });
+
+$("mapCreate").onclick = async () => {
+  const p = $("mapPrompt").value.trim();
+  if (!p) return;
+  // every user idea gets battle-ized: same theme, but always a war zone with cover
+  const wrapped = `${p}, reimagined as a large war-torn battlefield combat zone, battle damage everywhere, ` +
+    `barricades sandbags and cover positions between structures, big open explorable area, photorealistic`;
+  $("mapCreate").disabled = true;
+  try {
+    const { job_id } = await (await fetch(`/api/create?quality=plus&prompt=${encodeURIComponent(wrapped)}`, { headers: keyHeaders() })).json();
+    const t0 = Date.now();
+    const iv = setInterval(async () => {
+      const j = await (await fetch(`/api/job?id=${job_id}`)).json();
+      if (j.status === "ready") {
+        clearInterval(iv);
+        $("mapStatus").textContent = "✓ your arena is ready — it's in the list";
+        $("mapCreate").disabled = false;
+        loadMaps();
+      } else if (j.status === "error") {
+        clearInterval(iv);
+        $("mapStatus").textContent = `✗ ${j.error}`;
+        $("mapCreate").disabled = false;
+      } else {
+        $("mapStatus").textContent = `⚒ forging your battlefield… ${((Date.now() - t0) / 60000).toFixed(1)} min (hero quality ≈ 10–25 min)`;
+      }
+    }, 6000);
+  } catch (e) {
+    $("mapStatus").textContent = `✗ ${e.message}`;
+    $("mapCreate").disabled = false;
+  }
+};
+
+// ============================================================================
+// Three.js scene + world
+// ============================================================================
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(1); // fps > sharpness in a shooter
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a0c);
+const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 400);
+camera.position.set(0, 1.7, 6);
+
+scene.add(new SparkRenderer({ renderer }));
+scene.add(new THREE.AmbientLight(0x707880, 1.2));
+const sun = new THREE.DirectionalLight(0xfff0dd, 1.5);
+sun.position.set(20, 40, 10);
+scene.add(sun);
+
+let colliderRoot = null;
+const coverGroup = new THREE.Group(); // crates/walls — block bullets, sight and movement
+scene.add(coverGroup);
+const ray = new THREE.Raycaster();
+ray.firstHitOnly = true; // BVH fast path
+const DOWN = new THREE.Vector3(0, -1, 0);
+function groundY(x, z, fallback = 0) {
+  if (!colliderRoot) return fallback;
+  ray.set(new THREE.Vector3(x, 60, z), DOWN);
+  const h = ray.intersectObject(colliderRoot, true);
+  return h.length ? h[0].point.y : fallback;
+}
+
+// ---------------------------------------------------------------------------
+// Walkable grid — built ONCE at load (~2.4k raycasts, fast with BVH).
+// At runtime, ground height & "can I stand here" are pure array lookups:
+// zero physics raycasts per frame. This is what kills the lag, the floating,
+// and the inside-a-wall spawns all at once.
+// ---------------------------------------------------------------------------
+let GRID_R = 24, GRID_STEP = 0.5;
+let grid = null, baseY = 0, walkCells = [];
+function buildWalkGrid() {
+  // size the play space from the collider's real footprint, not a guess
+  if (colliderRoot) {
+    const box = new THREE.Box3().setFromObject(colliderRoot);
+    const ext = Math.max(Math.abs(box.min.x), Math.abs(box.max.x), Math.abs(box.min.z), Math.abs(box.max.z));
+    GRID_R = Math.min(70, Math.max(15, Math.ceil(ext)));
+    GRID_STEP = GRID_R > 25 ? 1.0 : 0.5; // coarser cells on big maps keep load fast
+  }
+  const n = Math.round((GRID_R * 2) / GRID_STEP) + 1;
+  baseY = groundY(0, 6, 0);
+  const h = new Float32Array(n * n), ok = new Uint8Array(n * n);
+  walkCells = [];
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    const x = -GRID_R + i * GRID_STEP, z = -GRID_R + j * GRID_STEP;
+    const y = groundY(x, z, NaN);
+    const idx = i * n + j;
+    // floor must exist and be near street level — rejects roofs and the void,
+    // but tolerates rubble piles, trenches, and sloped ground
+    if (Number.isFinite(y) && y - baseY < 3.0 && baseY - y < 4.0) {
+      h[idx] = y; ok[idx] = 1;
+      walkCells.push({ x, z, y });
+    } else { h[idx] = baseY; ok[idx] = 0; }
+  }
+  grid = { n, h, ok };
+}
+function gridIdx(x, z) {
+  if (!grid) return -1;
+  const i = Math.round((x + GRID_R) / GRID_STEP), j = Math.round((z + GRID_R) / GRID_STEP);
+  return i < 0 || j < 0 || i >= grid.n || j >= grid.n ? -1 : i * grid.n + j;
+}
+const walkable = (x, z) => { const k = gridIdx(x, z); return k >= 0 && grid.ok[k] === 1; };
+const floorH = (x, z) => { const k = gridIdx(x, z); return k >= 0 && grid.ok[k] ? grid.h[k] : baseY; };
+function losBlocked(from, to) {
+  const targets = [];
+  if (colliderRoot) targets.push(colliderRoot);
+  if (coverGroup.children.length) targets.push(coverGroup);
+  if (!targets.length) return false;
+  const dir = to.clone().sub(from);
+  const dist = dir.length();
+  ray.set(from, dir.normalize());
+  ray.far = dist - 0.6;
+  const h = ray.intersectObjects(targets, true);
+  ray.far = Infinity;
+  return h.length > 0;
+}
+
+let curSplat = null;
+let worldsCache = [];
+let accountWorlds = [];
+const sessionKey = () => sessionStorage.getItem("wlt_key") ?? "";
+const keyHeaders = () => (sessionKey() ? { "x-wlt-key": sessionKey() } : {});
+
+async function fetchWorlds() {
+  worldsCache = await (await fetch("/api/worlds")).json();
+  return worldsCache;
+}
+async function fetchAccountWorlds() {
+  if (!sessionKey()) { accountWorlds = []; return accountWorlds; }
+  const r = await fetch("/api/my-worlds", { headers: keyHeaders() });
+  const d = await r.json();
+  if (!Array.isArray(d)) throw new Error(d.error ?? "could not list your worlds");
+  accountWorlds = d.map((w) => ({ ...w, account: true }));
+  return accountWorlds;
+}
+// account worlds take precedence (they carry the API's metric scale factor)
+function allWorlds() {
+  const seen = new Set();
+  return [...accountWorlds, ...worldsCache].filter((w) => !seen.has(w.world_id) && seen.add(w.world_id));
+}
+
+async function loadWorldById(wid) {
+  let worlds = allWorlds();
+  if (!worlds.length) { await fetchWorlds(); worlds = allWorlds(); }
+  const world = worlds.find((x) => x.world_id === wid)
+    ?? worlds.find((x) => /war|battle|combat/i.test(x.prompt))
+    ?? worlds[0];
+  if (!world) throw new Error("no battlefields yet — forge one below");
+  // tear down the previous battlefield (map switching without a page reload)
+  if (curSplat) { scene.remove(curSplat); curSplat.dispose?.(); curSplat = null; }
+  if (colliderRoot) { scene.remove(colliderRoot); colliderRoot = null; }
+  // Marble worlds aren't metric — this one came out ~1/3 human scale, which made
+  // us giants and the map feel tiny. Scale world+collider up to true proportions.
+  // Tune per-map with ?scale=N if needed.
+  // prefer the API's own metric calibration for this world; ?scale= overrides
+  const WORLD_SCALE = parseFloat(new URLSearchParams(location.search).get("scale")) || world.scale || 3;
+  // decimated splat for gameplay: full_res is for sightseeing, not 60fps combat
+  curSplat = new SplatMesh({ url: world.splat_url_game ?? world.splat_url });
+  curSplat.quaternion.set(1, 0, 0, 0);
+  curSplat.scale.setScalar(WORLD_SCALE);
+  scene.add(curSplat);
+  if (world.collider_mesh_url) {
+    const gltf = await new GLTFLoader().loadAsync(world.collider_mesh_url);
+    colliderRoot = gltf.scene;
+    colliderRoot.quaternion.set(1, 0, 0, 0);
+    colliderRoot.scale.setScalar(WORLD_SCALE);
+    colliderRoot.traverse((o) => {
+      if (o.isMesh) {
+        o.material = new THREE.MeshBasicMaterial({ visible: false });
+        o.geometry.computeBoundsTree(); // BVH: raycasts go from O(n) to O(log n)
+      }
+    });
+    scene.add(colliderRoot);
+    colliderRoot.updateMatrixWorld(true);
+  }
+  await curSplat.initialized;
+  buildWalkGrid();
+  buildCover();
+  return world;
+}
+
+// ---------------------------------------------------------------------------
+// Cover props: crates, sandbag walls (low — you can shoot over them) and metal
+// barriers, scattered on walkable floor. They block bullets, bot sight AND
+// movement, so fights become peek-and-push instead of open-field aim duels.
+// ---------------------------------------------------------------------------
+function buildCover() {
+  coverGroup.clear();
+  const crateMat = new THREE.MeshStandardMaterial({ color: 0x6b543a, roughness: 0.9 });
+  const sackMat = new THREE.MeshStandardMaterial({ color: 0x7a7458, roughness: 1 });
+  const metalMat = new THREE.MeshStandardMaterial({ color: 0x555b60, roughness: 0.6, metalness: 0.4 });
+  const spots = [];
+  const candidates = walkCells.filter((c) => Math.hypot(c.x, c.z - 6) > 5); // keep spawn clear
+  for (let i = 0; i < 500 && spots.length < 16; i++) {
+    const c = candidates[Math.floor(Math.random() * candidates.length)];
+    if (c && spots.every((s) => Math.hypot(s.x - c.x, s.z - c.z) > 4.5)) spots.push(c);
+  }
+  for (const s of spots) {
+    const roll = Math.random();
+    let mesh, w, h, d;
+    if (roll < 0.45) {        // crate stack — full cover
+      w = d = 1.2 + Math.random() * 0.6; h = 1.4;
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), crateMat);
+    } else if (roll < 0.8) {  // sandbag wall — crouch-height, shoot over it
+      w = 2.6; h = 1.05; d = 0.5;
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), sackMat);
+    } else {                  // metal barrier — tall, narrow
+      w = 1.8; h = 2.1; d = 0.35;
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), metalMat);
+    }
+    mesh.position.set(s.x, s.y + h / 2, s.z);
+    mesh.rotation.y = Math.random() * Math.PI;
+    coverGroup.add(mesh);
+    // stamp the footprint out of the walkable grid so nobody clips through —
+    // generous margin because grid cells are up to 1m apart on big maps
+    const rad = Math.max(w, d) / 2 + 0.9;
+    for (const c of walkCells) {
+      if (Math.hypot(c.x - s.x, c.z - s.z) < rad) {
+        const k = gridIdx(c.x, c.z);
+        if (k >= 0) grid.ok[k] = 0;
+      }
+    }
+  }
+  walkCells = walkCells.filter((c) => { const k = gridIdx(c.x, c.z); return k >= 0 && grid.ok[k] === 1; });
+  coverGroup.updateMatrixWorld(true);
+}
+
+// ============================================================================
+// Player
+// ============================================================================
+const controls = new PointerLockControls(camera, renderer.domElement);
+controls.pointerSpeed = 2.0; // default aim speed is sluggish for a shooter
+
+// raw mouse input: without unadjustedMovement the OS applies pointer
+// acceleration inside pointer lock. BUT: on platforms that don't support it
+// (e.g. many Linux setups) the request rejects — and by then the user-gesture
+// window is gone, so a retry also fails. Remember the failure and use the
+// plain lock on every later attempt.
+let rawMouseOK = true;
+function lockPointer() {
+  const el = renderer.domElement;
+  if (!rawMouseOK) { el.requestPointerLock(); return; }
+  try {
+    const p = el.requestPointerLock({ unadjustedMovement: true });
+    p?.catch?.(() => { rawMouseOK = false; el.requestPointerLock(); });
+  } catch {
+    rawMouseOK = false;
+    el.requestPointerLock();
+  }
+}
+renderer.domElement.addEventListener("mousedown", () => {
+  if (running && !controls.isLocked) lockPointer();
+});
+const keys = {};
+addEventListener("keydown", (e) => (keys[e.code] = true));
+addEventListener("keyup", (e) => (keys[e.code] = false));
+
+const player = { hp: 100, lastHitAt: 0, kills: 0, shotsFired: 0, shotsHit: 0, vel: new THREE.Vector3() };
+const ARENA_R = 9.5;
+const MAG = 12;
+let ammo = MAG, reloading = false;
+
+// ---------------------------------------------------------------------------
+// First-person viewmodel: rifle in your hands, muzzle flash, recoil, reload
+// animation, walk sway. Placeholder is built from primitives; drop an export
+// of your weapon pack at  viewer/assets/gun.glb  and it replaces this.
+// ---------------------------------------------------------------------------
+scene.add(camera); // children of the camera (the gun) only render if the camera is in the scene
+const gun = new THREE.Group();
+{
+  const metal = new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: 0.45, metalness: 0.7 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x15171b, roughness: 0.6, metalness: 0.5 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.11, 0.42), metal);
+  body.position.z = -0.2;
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.3, 10), dark);
+  barrel.rotation.x = Math.PI / 2;
+  barrel.position.set(0, 0.02, -0.48);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.09), dark);
+  grip.position.set(0, -0.12, -0.06);
+  grip.rotation.x = 0.3;
+  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.07), metal);
+  mag.position.set(0, -0.13, -0.22);
+  mag.rotation.x = -0.15;
+  const sight = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 0.06), dark);
+  sight.position.set(0, 0.075, -0.3);
+  const stock = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.09, 0.18), dark);
+  stock.position.set(0, -0.01, 0.05);
+  gun.add(body, barrel, grip, mag, sight, stock);
+}
+const muzzle = new THREE.Object3D();
+muzzle.position.set(0, 0.02, -0.66);
+gun.add(muzzle);
+const flash = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.18, 0.18),
+  new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })
+);
+flash.position.copy(muzzle.position);
+flash.visible = false;
+gun.add(flash);
+const GUN_POS = new THREE.Vector3(0.26, -0.22, -0.45);
+gun.position.copy(GUN_POS);
+gun.rotation.y = 0.03;
+camera.add(gun);
+
+// swap in the real weapon model if the user exported one
+new GLTFLoader().load("assets/gun.glb", (g) => {
+  gun.clear();
+  const m = g.scene;
+  const box = new THREE.Box3().setFromObject(m);
+  const size = box.getSize(new THREE.Vector3());
+  m.scale.setScalar(0.55 / Math.max(size.x, size.y, size.z)); // normalize to viewmodel size
+  box.setFromObject(m);
+  m.position.sub(box.getCenter(new THREE.Vector3()));
+  gun.add(m, muzzle, flash);
+}, undefined, () => {}); // silently keep the placeholder if no file
+
+let recoil = 0, reloadT = 0, bobPhase = 0;
+
+function reload() {
+  if (reloading || ammo === MAG) return;
+  reloading = true;
+  reloadT = 0;
+  $("ammo").textContent = "RELOADING";
+  setTimeout(() => { ammo = MAG; reloading = false; }, 1100);
+}
+addEventListener("keydown", (e) => { if (e.code === "KeyR") reload(); });
+
+// tracers (both sides)
+const tracers = [];
+function tracer(from, to, color) {
+  const geo = new THREE.BufferGeometry().setFromPoints([from, to]);
+  const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9 }));
+  scene.add(line);
+  tracers.push({ line, ttl: 0.09 });
+}
+
+renderer.domElement.addEventListener("mousedown", () => {
+  if (!controls.isLocked || !running || reloading || ammo <= 0) return;
+  ammo--;
+  player.shotsFired++;
+  const from = camera.position.clone();
+  const dir = camera.getWorldDirection(new THREE.Vector3());
+  ray.set(from, dir);
+  const meshes = bots.flatMap((b) => b.alive ? b.meshes : []);
+  const hits = ray.intersectObjects(meshes, false);
+  let end = from.clone().addScaledVector(dir, 60);
+  if (hits.length) {
+    const bot = hits[0].object.userData.bot;
+    const wallHit = losBlocked(from, hits[0].point) ;
+    if (!wallHit) {
+      end = hits[0].point;
+      // robot is one skinned mesh — headshot = hit above shoulder height
+      const headshot = hits[0].object.userData.part === "head"
+        || hits[0].point.y - bot.mesh.position.y > 1.5;
+      damageBot(bot, headshot ? 100 : 40);
+      player.shotsHit++;
+      $("hit").style.opacity = 1;
+      setTimeout(() => ($("hit").style.opacity = 0), 120);
+    }
+  }
+  // shot feedback: tracer from the actual barrel, muzzle flash, recoil kick
+  const mp = muzzle.getWorldPosition(new THREE.Vector3());
+  tracer(mp, end, 0xfff2a0);
+  recoil = 1;
+  flash.visible = true;
+  flash.rotation.z = Math.random() * Math.PI;
+  flash.scale.setScalar(0.8 + Math.random() * 0.5);
+  setTimeout(() => (flash.visible = false), 45);
+  if (ammo === 0) reload();
+});
+
+// ============================================================================
+// Bots
+// ============================================================================
+let bots = [];
+
+// Humanoid robot enemy (user-supplied "biped_robot" GLTF, rigged + animated).
+// Loaded once, skeleton-cloned per bot. Capsule soldiers remain as fallback
+// if the model fails to load.
+let robotTpl = null, robotClip = null, robotScale = 1, robotYOff = 0;
+
+// The model's materials use KHR_materials_pbrSpecularGlossiness, which
+// three.js no longer supports — they load black. Rebuild proper PBR materials
+// from the texture files that ship with the model (diffuse + normal + AO).
+const robotMats = {};
+function robotMaterial(name) {
+  const key = /metal/i.test(name) ? "Metal" : /paint/i.test(name) ? "Paint" : "Plastic";
+  if (!robotMats[key]) {
+    const tl = new THREE.TextureLoader();
+    const tex = (file, srgb) => {
+      const t = tl.load(`assets/biped_robot/textures/${file}`);
+      t.flipY = false; // GLTF convention
+      if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+      return t;
+    };
+    robotMats[key] = new THREE.MeshStandardMaterial({
+      map: tex(`${key}_diffuse.jpeg`, true),
+      normalMap: tex(`${key}_normal.jpeg`, false),
+      aoMap: tex(`${key}_occlusion.png`, false),
+      roughness: key === "Metal" ? 0.45 : 0.75,
+      metalness: key === "Metal" ? 0.85 : 0.15,
+    });
+  }
+  return robotMats[key];
+}
+
+new GLTFLoader().load("assets/biped_robot/scene.gltf", (g) => {
+  g.scene.traverse((o) => {
+    if (!o.isMesh && !o.isSkinnedMesh) return;
+    if (/ground/i.test(o.material?.name ?? "")) o.visible = false; // baked-in floor plane
+    else o.material = robotMaterial(o.material?.name ?? "");
+  });
+  const box = new THREE.Box3().setFromObject(g.scene);
+  const size = box.getSize(new THREE.Vector3());
+  robotScale = 1.85 / size.y;           // normalize to ~1.85m tall
+  robotYOff = -box.min.y * robotScale;  // feet on the ground
+  robotTpl = g.scene;
+  robotClip = g.animations[0] ?? null;  // "Robot_Soldat" walk cycle
+}, undefined, (e) => console.warn("biped_robot failed to load, using fallback bots:", e));
+
+// ---------------------------------------------------------------------------
+// Procedural skeletal animation, rooted at the pelvis (the CG way):
+// the baked clip is frozen as a base stance; every limb is then driven in
+// code through the bone hierarchy — thigh/calf swings for steps, arm
+// counter-swings, left arm works the weapon on reload, right arm recoils.
+// ---------------------------------------------------------------------------
+const _q = new THREE.Quaternion();
+const LIMB_AXIS = new THREE.Vector3(0, 0, 1); // if limbs swing sideways instead of forward, use (1,0,0)
+
+function grabRig(inner) {
+  const find = (re) => {
+    let b = null;
+    inner.traverse((o) => { if (!b && o.isBone && re.test(o.name)) b = o; });
+    return b && { bone: b, base: b.quaternion.clone() };
+  };
+  return {
+    spine: find(/Spine/i),
+    tL: find(/L.?Thigh/i), tR: find(/R.?Thigh/i),
+    cL: find(/L.?Calf/i),  cR: find(/R.?Calf/i),
+    // this robot is digitigrade — HorseLink is the reverse-knee segment
+    hL: find(/L.?HorseLink/i), hR: find(/R.?HorseLink/i),
+    uaL: find(/L.?UpperArm/i), uaR: find(/R.?UpperArm/i),
+    faL: find(/L.?Forearm/i),  faR: find(/R.?Forearm/i),
+  };
+}
+
+// pose tuning — every value here is a quick knob, signs may need flipping per rig
+const POSE = {
+  strideFreq: 3.4,             // stride cycles per meter-ish
+  thigh: 0.32, knee: 0.4, link: 0.24,
+  armSwing: 0.3,
+  aimArmR: -0.95,              // right arm raised, holding the rifle on target
+  aimArmL: -0.8,               // left arm up supporting the weapon (two-handed)
+  aimForearm: 0.55,
+};
+function setBone(b, ang) {
+  if (!b) return;
+  _q.setFromAxisAngle(LIMB_AXIS, ang);
+  b.bone.quaternion.copy(b.base).multiply(_q);
+}
+
+function applyBotPose(bot, dt, speedNow, now, aiming) {
+  const R = bot.rig;
+  if (!R) return;
+  if (speedNow > 0) bot.walkPhase = (bot.walkPhase ?? 0) + dt * speedNow * POSE.strideFreq;
+  const ph = bot.walkPhase ?? 0;
+  const s = Math.sin(ph);
+  const walking = speedNow > 0 ? 1 : 0;
+  const idle = Math.sin(now / 650 + ph) * 0.035; // breathing sway when standing
+
+  // digitigrade legs: thigh swings, calf counter-bends, horse-link compensates
+  // so the foot stays level — each leg's bend peaks during ITS swing phase
+  const bendL = Math.max(0, Math.sin(ph + 0.4)) * walking;
+  const bendR = Math.max(0, Math.sin(ph + Math.PI + 0.4)) * walking;
+  setBone(R.tL, s * POSE.thigh * walking);
+  setBone(R.tR, -s * POSE.thigh * walking);
+  setBone(R.cL, bendL * POSE.knee);
+  setBone(R.cR, bendR * POSE.knee);
+  setBone(R.hL, -bendL * POSE.link);
+  setBone(R.hR, -bendR * POSE.link);
+
+  let armL, armR;
+  let faLAng = 0.12, faRAng = 0.12;
+  if (aiming) {
+    // two-handed firing stance: both arms up on the weapon
+    armR = POSE.aimArmR - idle * 0.3;
+    armL = POSE.aimArmL + idle * 0.3;
+    faRAng = POSE.aimForearm * 0.7;
+    faLAng = POSE.aimForearm;
+  } else {
+    // walking: arms counter-swing the legs
+    armL = -s * POSE.armSwing * walking + idle;
+    armR = s * POSE.armSwing * walking - idle;
+  }
+
+  // reload: left arm drops off the weapon and pumps at the receiver
+  if (now < bot.reloadUntil) {
+    const r = 1 - (bot.reloadUntil - now) / 2200;
+    const lift = Math.sin(Math.PI * Math.min(1, r));
+    armL = -0.5 * lift;
+    faLAng = 0.3 + Math.abs(Math.sin(r * Math.PI * 3)) * lift;
+  }
+  // firing recoil: kick travels through both arms, right takes most of it
+  bot.recoilT = Math.max(0, (bot.recoilT ?? 0) - dt * 6);
+  armR -= bot.recoilT * 0.2;
+  armL -= bot.recoilT * 0.08;
+  faRAng += bot.recoilT * 0.3;
+
+  setBone(R.uaL, armL);
+  setBone(R.uaR, armR);
+  setBone(R.faL, faLAng);
+  setBone(R.faR, faRAng);
+  setBone(R.spine, idle * 0.6 + walking * Math.sin(ph * 2) * 0.05);
+}
+
+// rifle grip: offsets in the HAND BONE's local space (tune here if it sits wrong)
+const GRIP_POS = new THREE.Vector3(0.02, 0.07, 0.01); // meters relative to palm
+const GRIP_ROT = new THREE.Euler(0, Math.PI / 2, 0);  // barrel along the hand's forward axis
+
+function buildBotMesh() {
+  const group = new THREE.Group();
+  const uniform = new THREE.MeshStandardMaterial({ color: 0x4a4f38, roughness: 0.85 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x1e2126, roughness: 0.6 });
+  const hittable = [];
+  let mixer = null, rig = null;
+
+  const rifle = new THREE.Group();
+  const rbody = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.62), dark);
+  const rbarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 8), dark);
+  rbarrel.rotation.x = Math.PI / 2;
+  rbarrel.position.set(0, 0.02, -0.45);
+  const rmag = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.15, 0.07), uniform);
+  rmag.position.set(0, -0.11, -0.06);
+  rifle.add(rbody, rbarrel, rmag);
+
+  if (robotTpl) {
+    const inner = cloneSkeleton(robotTpl);
+    inner.scale.setScalar(robotScale);
+    inner.position.y = robotYOff;
+    group.add(inner);
+    inner.traverse((o) => {
+      if ((o.isMesh || o.isSkinnedMesh) && o.visible) { o.userData.part = "body"; hittable.push(o); }
+    });
+    mixer = new THREE.AnimationMixer(inner);
+    if (robotClip) { mixer.clipAction(robotClip).play(); mixer.update(0.03); } // bake a stance, then freeze
+    rig = grabRig(inner); // base quats captured AFTER the stance is baked
+
+    // parent the rifle to the right-hand BONE so it inherits the full
+    // skeletal transform chain (pelvis → spine → arm → hand) every frame
+    let hand = null;
+    inner.traverse((o) => { if (!hand && o.isBone && /R.*Hand/i.test(o.name)) hand = o; });
+    inner.updateMatrixWorld(true);
+    if (hand) {
+      hand.add(rifle);
+      const ws = new THREE.Vector3();
+      hand.getWorldScale(ws);
+      const inv = 1 / ws.x; // cancel the skeleton's inherited scale
+      rifle.scale.setScalar(inv);
+      rifle.position.copy(GRIP_POS).multiplyScalar(inv);
+      rifle.rotation.copy(GRIP_ROT);
+    } else {
+      rifle.position.set(0.12, 1.2, -0.35);
+      rifle.rotation.set(-0.15, 0.55, 0.1);
+      group.add(rifle);
+    }
+  } else {
+    const skin = new THREE.MeshStandardMaterial({ color: 0xb08968, roughness: 0.7 });
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.26, 0.75, 6, 12), uniform);
+    body.position.y = 0.95;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 12), skin);
+    head.position.y = 1.62;
+    body.userData.part = "body"; head.userData.part = "head";
+    group.add(body, head);
+    hittable.push(body, head);
+    rifle.position.set(0.12, 1.2, -0.35);
+    rifle.rotation.set(-0.15, 0.55, 0.1);
+    group.add(rifle);
+  }
+
+  return { group, hittable, rifle, mixer, rig };
+}
+
+function spawnBot(genome) {
+  const { group, hittable, rifle, mixer, rig } = buildBotMesh();
+  // spawn on a real floor cell 5–10m from the player — never inside walls
+  const px = camera.position.x, pz = camera.position.z;
+  const maxD = Math.max(20, GRID_R * 0.8);
+  const candidates = walkCells.filter((c) => {
+    const d = Math.hypot(c.x - px, c.z - pz);
+    return d > 8 && d < maxD;
+  });
+  const cell = candidates.length
+    ? candidates[Math.floor(Math.random() * candidates.length)]
+    : { x: px + 6, z: pz, y: camera.position.y - 1.7 };
+  group.position.set(cell.x, cell.y, cell.z);
+
+  // floating health bar (sprites always face the camera); shown when hurt
+  const barBg = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x101010, depthTest: false }));
+  barBg.scale.set(0.95, 0.11, 1);
+  barBg.position.y = 2.1;
+  const barFg = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x66bb6a, depthTest: false }));
+  barFg.center.set(0, 0.5); // left-anchored so it shrinks rightward
+  barFg.scale.set(0.88, 0.075, 1);
+  barFg.position.set(-0.44, 2.1, 0);
+  barBg.visible = barFg.visible = false;
+  const reloadDot = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xffd54f, depthTest: false, transparent: true }));
+  reloadDot.scale.set(0.16, 0.16, 1);
+  reloadDot.position.y = 2.3;
+  reloadDot.visible = false;
+  group.add(barBg, barFg, reloadDot);
+
+  scene.add(group);
+  const bot = {
+    genome: mutate(genome),
+    mesh: group, meshes: hittable, rifle, barBg, barFg, reloadDot, mixer, rig,
+    walkPhase: Math.random() * Math.PI * 2, recoilT: 0,
+    hp: 100, alive: true,
+    mag: 8, reloadUntil: 0,       // bots run a magazine + reload cycle, same as you
+    sawPlayerAt: 0, lastShot: 0, damageDealt: 0, lastHurt: -1e9,
+    strafePhase: Math.random() * Math.PI * 2,
+  };
+  for (const m of hittable) m.userData.bot = bot;
+  return bot;
+}
+
+function damageBot(bot, dmg) {
+  if (!bot.alive) return;
+  bot.hp -= dmg;
+  bot.lastHurt = performance.now();
+  // update health bar: width tracks hp, color goes green → orange → red
+  const frac = Math.max(0, bot.hp) / 100;
+  bot.barFg.scale.x = 0.88 * frac;
+  bot.barFg.material.color.set(frac > 0.5 ? 0x66bb6a : frac > 0.25 ? 0xffb347 : 0xff5544);
+  if (bot.hp <= 0) {
+    bot.barBg.visible = bot.barFg.visible = false;
+    bot.alive = false;
+    player.kills++;
+    bot.mesh.rotation.x = -Math.PI / 2; // simple ragdoll: face-plant
+    bot.mesh.position.y = floorH(bot.mesh.position.x, bot.mesh.position.z) + 0.2;
+    setTimeout(() => scene.remove(bot.mesh), 4000);
+  }
+}
+
+function botThink(bot, dt, now) {
+  if (!bot.alive) return;
+  const g = bot.genome;
+  const p = camera.position;
+  const bp = bot.mesh.position;
+  const dx = p.x - bp.x, dz = p.z - bp.z;
+  const dist = Math.hypot(dx, dz);
+  const wantDist = 13 - g.aggression * 8;
+
+  // ---- classic bot loop: MOVE (face travel dir) → ACQUIRE (turn to player)
+  // ---- → FIGHT (stand, aim, shoot) → pick next position → repeat
+  bot.state = bot.state ?? "acquire";
+  const yawTo = (tx, tz) => Math.atan2(tx - bp.x, tz - bp.z);
+  const turnToward = (targetYaw, rate) => {
+    let d = targetYaw - bot.mesh.rotation.y;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    bot.mesh.rotation.y += Math.sign(d) * Math.min(Math.abs(d), rate * dt);
+    return Math.abs(d);
+  };
+
+  let speedNow = 0;
+  if (bot.state === "move") {
+    // player right on top of them → drop the plan and engage NOW
+    if (dist < 6) { bot.moveTarget = null; bot.state = "acquire"; }
+    else if (!bot.moveTarget) bot.state = "acquire";
+    else {
+      const mdx = bot.moveTarget.x - bp.x, mdz = bot.moveTarget.z - bp.z;
+      const md = Math.hypot(mdx, mdz);
+      if (md < 0.3) { bot.moveTarget = null; bot.state = "acquire"; }
+      else {
+        // turn into the walk direction first, then step — no crab-walking
+        const err = turnToward(yawTo(bot.moveTarget.x, bot.moveTarget.z), 4.5);
+        if (err < 0.5) {
+          const s = Math.min(g.speed * 0.75, 2.2);
+          const nx = bp.x + (mdx / md) * s * dt, nz = bp.z + (mdz / md) * s * dt;
+          if (walkable(nx, nz)) { bp.x = nx; bp.z = nz; speedNow = s; }
+          else { bot.moveTarget = null; bot.state = "acquire"; }
+        }
+      }
+    }
+  } else if (bot.state === "acquire") {
+    // arrived: plant feet, swing around to face you, settle into the stance
+    const err = turnToward(yawTo(p.x, p.z), 5.0);
+    if (err < 0.25) {
+      bot.state = "fight";
+      bot.fightUntil = now + 3500 + Math.random() * 3000;
+    }
+  } else {
+    // fight: hold ground and TRACK the player — fast enough to keep a
+    // strafing target in the firing cone, so they engage instead of staring
+    bot.faceErr = turnToward(yawTo(p.x, p.z), 4.0);
+
+    // too close? NEVER turn your back — backpedal while still facing/firing
+    if (dist < wantDist - 3 && dist > 1.2) {
+      const bx = bp.x - (dx / dist) * 0.9 * dt, bz = bp.z - (dz / dist) * 0.9 * dt;
+      if (walkable(bx, bz)) { bp.x = bx; bp.z = bz; speedNow = 0.9; }
+    }
+
+    // only being TOO FAR forces a reposition walk (close range is handled by
+    // the backpedal above); sticky so a jogging player doesn't dislodge them
+    const rangeBad = dist > wantDist + 6;
+    if (!rangeBad) bot.rangeBadSince = 0;
+    else if (!bot.rangeBadSince) bot.rangeBadSince = now;
+    if (now > bot.fightUntil || (bot.rangeBadSince && now - bot.rangeBadSince > 1200)) {
+      bot.rangeBadSince = 0;
+      const ux = dx / (dist || 1), uz = dz / (dist || 1);
+      let tx, tz;
+      if (dist > wantDist + 2) { const d = dist - wantDist; tx = bp.x + ux * d; tz = bp.z + uz * d; }
+      else {
+        const side = Math.random() < 0.5 ? 1 : -1;
+        const len = 2 + Math.random() * 2.5;
+        tx = bp.x - uz * side * len; tz = bp.z + ux * side * len;
+      }
+      if (walkable(tx, tz)) { bot.moveTarget = { x: tx, z: tz }; bot.state = "move"; }
+      else bot.fightUntil = now + 1200; // boxed in — hold and keep firing
+    }
+  }
+  bp.y = floorH(bp.x, bp.z);
+
+  // drive the skeleton in code: legs stride with ground speed, arms
+  // counter-swing while walking, two-handed aim stance when engaging
+  applyBotPose(bot, dt, speedNow, now, bot.state !== "move");
+
+  // line of sight (throttled to 5Hz per bot, skipped when far) + reaction gate
+  const eye = bp.clone().setY(bp.y + 1.55);
+  if (!bot.nextLos || now > bot.nextLos) {
+    bot.losBlocked = dist > 65 ? true : losBlocked(eye, p);
+    bot.nextLos = now + 200;
+  }
+  // health bar stays visible once the bot has taken any damage
+  const showBar = bot.hp < 100;
+  bot.barBg.visible = bot.barFg.visible = showBar;
+
+  // reloading: amber blink overhead, no shooting until done
+  if (now < bot.reloadUntil) {
+    bot.reloadDot.visible = true;
+    bot.reloadDot.material.opacity = 0.35 + 0.65 * Math.abs(Math.sin(now / 130));
+    return;
+  }
+  bot.reloadDot.visible = false;
+
+  // only fire from the FIGHT stance with the body actually pointed at you
+  // (~20° cone) — every shot comes from a robot that visibly stopped and aimed
+  if (bot.state !== "fight" || (bot.faceErr ?? 9) > 0.35) return;
+
+  if (bot.losBlocked) { bot.sawPlayerAt = 0; return; }
+  if (!bot.sawPlayerAt) bot.sawPlayerAt = now;
+  if (now - bot.sawPlayerAt < g.reactionMs) return;
+  if (now - bot.lastShot < 380) return;
+  bot.lastShot = now;
+  bot.recoilT = 1; // right arm kick (procedural)
+  bot.fightUntil = Math.max(bot.fightUntil ?? 0, now + 1600); // shooting keeps them engaged
+  bot.mag--;
+  if (bot.mag <= 0) { bot.mag = 8; bot.reloadUntil = now + 2200; }
+
+  // hit chance: genome accuracy, degraded by distance and *your* movement —
+  // strafing and sprinting genuinely make you harder to hit
+  const movePenalty = Math.min(player.vel.length() * 0.11, 0.5);
+  const distPenalty = Math.min(dist / 40, 0.45);
+  const pHit = Math.max(0.03, bot.genome.accuracy - movePenalty - distPenalty);
+  const gunPos = bot.rifle.getWorldPosition(new THREE.Vector3());
+  if (Math.random() < pHit) {
+    tracer(gunPos, p.clone().add(new THREE.Vector3(0, -0.1, 0)), 0xff6b4a);
+    const dmg = 7 + Math.random() * 7;
+    player.hp -= dmg;
+    bot.damageDealt += dmg;
+    player.lastHitAt = now;
+    $("dmg").style.opacity = Math.min(1, (100 - player.hp) / 70);
+    if (player.hp <= 0) endMatch();
+  } else {
+    const miss = p.clone().add(new THREE.Vector3((Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2.5));
+    tracer(gunPos, miss, 0xff6b4a);
+  }
+}
+
+// ============================================================================
+// Rounds + match flow
+// ============================================================================
+let running = false;
+let round = 0;
+let genome = store.genome;
+let intermission = false;
+
+function botsThisRound(r) { return Math.min(2 + Math.floor((r - 1) / 2), 6); }
+
+function startRound() {
+  round++;
+  intermission = false;
+  const n = botsThisRound(round);
+  bots = Array.from({ length: n }, () => spawnBot(genome));
+  $("round").textContent = `ROUND ${round}`;
+  $("msg").textContent = `${n} hostiles`;
+  setTimeout(() => ($("msg").textContent = ""), 1800);
+}
+
+function roundCleared() {
+  genome = evolve(genome, bots, true);
+  store.genome = genome;
+  renderMenu();
+  intermission = true;
+  $("msg").textContent = `round clear — enemy is learning…`;
+  setTimeout(() => { if (running) startRound(); }, 3500);
+}
+
+function startMatch() {
+  running = true;
+  round = 0;
+  player.hp = 100; player.kills = 0; player.shotsFired = 0; player.shotsHit = 0;
+  ammo = MAG; reloading = false;
+  genome = store.genome;
+  camera.position.set(0, floorH(0, 6) + 1.7, 6);
+  closeCinematic();
+  $("menu").classList.add("hidden");
+  $("gameover").classList.add("hidden");
+  $("hud").style.display = "block";
+  unmountRobot();
+  playCombatMusic();
+  lockPointer();
+  startRound();
+}
+
+function endMatch() {
+  if (!running) return;
+  running = false;
+  controls.unlock();
+  for (const b of bots) if (b.alive) scene.remove(b.mesh);
+  genome = evolve(genome, bots, false);
+  store.genome = genome;
+  store.generation = store.generation + 1;
+  store.history = [{ at: Date.now(), rounds: round, kills: player.kills, gen: store.generation - 1 }, ...store.history];
+  const acc = player.shotsFired ? Math.round((player.shotsHit / player.shotsFired) * 100) : 0;
+  $("goStats").innerHTML =
+    `survived <b>${round}</b> round${round === 1 ? "" : "s"} · <b>${player.kills}</b> kills · ${acc}% accuracy<br/>` +
+    `enemy AI advanced to <b>generation ${store.generation}</b> — it keeps this forever.`;
+  $("hud").style.display = "none";
+  $("dmg").style.opacity = 0;
+  combatMusic.pause(); // silence under the cinematic
+  startCinematic();
+  renderMenu();
+}
+
+// death cinematic: play the clip → fade through black/red → blur the last
+// frame → reveal the K.I.A. panel floating over it, movie-credits style
+function startCinematic() {
+  const vid = $("cineVid");
+  $("cine").classList.remove("hidden");
+  $("cineFade").style.opacity = "0";
+  vid.style.filter = "none";
+  vid.currentTime = 0;
+  vid.playbackRate = 1.4; // keep the drama, trim the wait
+  vid.play().catch(() => {});
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    $("cineFade").style.opacity = "1";
+    setTimeout(() => { vid.style.filter = "blur(6px) brightness(.55)"; }, 900);
+    setTimeout(() => {
+      $("gameover").classList.add("overCine");
+      $("gameover").classList.remove("hidden");
+      playMenuMusic();
+    }, 2100);
+  };
+  vid.onended = finish;
+  setTimeout(finish, 9000); // safety: never strand the player if the video stalls
+}
+
+function closeCinematic() {
+  $("cineVid").pause();
+  $("cine").classList.add("hidden");
+  $("gameover").classList.remove("overCine");
+}
+
+$("startBtn").onclick = startMatch;
+$("againBtn").onclick = startMatch;
+$("menuBtn").onclick = () => {
+  closeCinematic();
+  $("gameover").classList.add("hidden");
+  $("menu").classList.remove("hidden");
+  mountRobot();
+  window.scrollTo(0, 0);
+};
+
+// ============================================================================
+// Music: ambient loop in the menu, combat loop in the fight.
+// Browsers block autoplay until a user gesture, so the menu track starts on
+// the first click/keypress anywhere.
+// ============================================================================
+const menuMusic = new Audio("assets/darkops_ambience_120.5bpm_cm_intro.wav");
+menuMusic.loop = true;
+menuMusic.volume = 0.5;
+const combatMusic = new Audio("assets/darkops_enemies2_80bpm_cm_intro.wav");
+combatMusic.loop = true;
+combatMusic.volume = 0.45;
+
+function playMenuMusic() {
+  combatMusic.pause();
+  combatMusic.currentTime = 0;
+  menuMusic.play().catch(() => {}); // blocked until a gesture — retried below
+}
+function playCombatMusic() {
+  menuMusic.pause();
+  menuMusic.currentTime = 0;
+  combatMusic.play().catch(() => {});
+}
+// first user gesture unlocks audio → start whichever screen we're on
+const unlockAudio = () => { if (!running) playMenuMusic(); };
+document.addEventListener("pointerdown", unlockAudio, { once: true });
+document.addEventListener("keydown", unlockAudio, { once: true });
+
+// ============================================================================
+// Main loop
+// ============================================================================
+const clock = new THREE.Clock();
+const prevPos = new THREE.Vector3();
+function tick() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const now = performance.now();
+
+  if (running && controls.isLocked) {
+    const v = 4.6 * dt * (keys.ShiftLeft ? 1.9 : 1);
+    prevPos.copy(camera.position);
+    if (keys.KeyW) controls.moveForward(v);
+    if (keys.KeyS) controls.moveForward(-v);
+    if (keys.KeyA) controls.moveRight(-v);
+    if (keys.KeyD) controls.moveRight(v);
+    // block walking into non-floor (walls/void), slide along if one axis is fine
+    if (!walkable(camera.position.x, camera.position.z)) {
+      if (walkable(prevPos.x, camera.position.z)) camera.position.x = prevPos.x;
+      else if (walkable(camera.position.x, prevPos.z)) camera.position.z = prevPos.z;
+      else { camera.position.x = prevPos.x; camera.position.z = prevPos.z; }
+    }
+    const eyeTarget = floorH(camera.position.x, camera.position.z) + 1.7;
+    camera.position.y += (eyeTarget - camera.position.y) * Math.min(1, dt * 14);
+    player.vel.copy(camera.position).sub(prevPos).divideScalar(Math.max(dt, 1e-4));
+
+    for (const b of bots) botThink(b, dt, now);
+
+    // COD-style regen after 4s unhit
+    if (player.hp < 100 && now - player.lastHitAt > 4000) {
+      player.hp = Math.min(100, player.hp + 14 * dt);
+      $("dmg").style.opacity = 0;
+    }
+    if (!intermission && bots.length && bots.every((b) => !b.alive)) roundCleared();
+
+    $("hpbar").firstElementChild.style.width = `${Math.max(0, player.hp)}%`;
+    if (!reloading) $("ammo").textContent = `${ammo} / ${MAG}`;
+    $("gen").textContent = `enemy gen ${store.generation} · aim ${Math.round(genome.accuracy * 100)}%`;
+  }
+
+  // pointer not captured (Esc, or a rejected lock) → tell the player what to do
+  if (running) {
+    if (!controls.isLocked && $("msg").textContent === "") $("msg").textContent = "· click to aim ·";
+    else if (controls.isLocked && $("msg").textContent === "· click to aim ·") $("msg").textContent = "";
+  }
+
+  // viewmodel animation: recoil decays fast, reload dips the gun down-and-tilt,
+  // walking adds a subtle figure-8 sway
+  recoil *= Math.exp(-13 * dt);
+  const spd = Math.min(player.vel.length(), 6);
+  bobPhase += dt * (3 + spd * 1.6);
+  const bobA = spd > 0.5 ? 0.009 : 0.0025;
+  let gx = GUN_POS.x + Math.cos(bobPhase) * bobA;
+  let gy = GUN_POS.y + Math.sin(bobPhase * 2) * bobA;
+  let grx = recoil * 0.15;
+  if (reloading) {
+    reloadT = Math.min(1, reloadT + dt / 1.1);
+    gy -= Math.sin(Math.PI * reloadT) * 0.17;   // dip out of view…
+    grx -= Math.sin(Math.PI * reloadT) * 0.9;   // …tilting down, then back up
+  }
+  gun.position.set(gx, gy, GUN_POS.z + recoil * 0.06);
+  gun.rotation.x = grx;
+
+  for (let i = tracers.length - 1; i >= 0; i--) {
+    tracers[i].ttl -= dt;
+    if (tracers[i].ttl <= 0) {
+      scene.remove(tracers[i].line);
+      tracers[i].line.geometry.dispose();
+      tracers.splice(i, 1);
+    }
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+tick();
+
+// pointer unlock (Esc) during a match pauses to menu-less state; keep simple: ignore
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// Boot: load the battlefield behind the menu (DEPLOY gated until ready —
+// spawning before the collider loads is how bots end up in the sky)
+let currentWorld = null;
+setDeployUI(null, true);
+$("loadState").textContent = "preparing battlefields…";
+(async () => {
+  try {
+    await fetchWorlds();
+    if (sessionKey()) {
+      // key survives reloads within this tab's session — reconnect silently
+      try {
+        await fetchAccountWorlds();
+        $("keyStatus").textContent = `✓ connected — ${accountWorlds.length} worlds from your account (◈, this session only)`;
+        $("wltKey").value = "••••••••";
+      } catch { sessionStorage.removeItem("wlt_key"); }
+    }
+    const w = await loadWorldById(new URLSearchParams(location.search).get("w"));
+    currentWorld = w;
+    selectedWorldId = w.world_id;
+    setDeployUI(w, false);
+    loadMaps();
+    $("loadState").textContent = "systems ready — choose a battlefield below";
+  } catch (e) {
+    $("loadState").textContent = `✗ ${e.message}`;
+    $("selName").textContent = `✗ ${e.message}`;
+  }
+})();
+</script>
+</body>
+</html>
